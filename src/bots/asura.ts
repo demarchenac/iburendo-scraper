@@ -42,7 +42,7 @@ async function getComicsFromList(page: Page) {
     }
 
     shouldScrapePage = nextBtnStyle === "pointer-events: auto;";
-    if (shouldScrapePage) navigateFromLocator(page, nextBtn);
+    if (shouldScrapePage) await navigateFromLocator(page, nextBtn);
   }
 
   return comics.sort((a, b) => a.slug.localeCompare(b.slug));
