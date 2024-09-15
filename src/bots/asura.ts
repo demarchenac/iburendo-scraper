@@ -1,7 +1,7 @@
 import type { Page } from "playwright";
 import { openPage, close, goTo, navigateFromLocator } from "./helpers";
-import { statusMap, TIMEOUTS_IN_MS } from "./constants";
-import { ComicFromList, CompleteComic } from "./types";
+import { monthMap, statusMap } from "./constants";
+import { ComicFromList, Comic, IncompleteChapter } from "./types";
 
 const url = "https://asuracomic.net/";
 
@@ -95,7 +95,7 @@ async function getComicsInPage(page: Page) {
 }
 
 async function getCompleteComics(page: Page, incompleteComics: ComicFromList[]) {
-  const comics: CompleteComic[] = [];
+  const comics: Comic<IncompleteChapter>[] = [];
 
   for (const incompleteComic of incompleteComics) {
     await goTo(page, incompleteComic.url);
@@ -109,10 +109,58 @@ async function getCompleteComics(page: Page, incompleteComics: ComicFromList[]) 
 
     const firstChapter = Number.parseInt(firstChapterText!.replace(/chapter/i, "").trim());
 
-    comics.push({ ...incompleteComic, firstChapter });
+    const chapters = await getChapterList(page, incompleteComic.title, incompleteComic.url);
+
+    comics.push({ ...incompleteComic, firstChapter, chapters });
   }
 
   return comics;
+}
+
+async function getChapterList(page: Page, title: string, comicUrl: string) {
+  const chapters: IncompleteChapter[] = [];
+
+  const chapterContainers = await page
+    .locator("h3", { hasText: `Chapter ${title}` })
+    .locator("..")
+    .locator("..")
+    .locator("div > div > div")
+    .all();
+
+  for (const chapterContainer of chapterContainers.toReversed()) {
+    const [chapterString, publishDateString] = await chapterContainer
+      .locator("h3")
+      .allTextContents();
+
+    const chapterUrlSegment = await chapterContainer.locator("h3 > a").getAttribute("href");
+
+    const [firstNumericMatch] = chapterString.match(/(\d+)/) as string[];
+    const number = Number.parseInt(firstNumericMatch.trim());
+
+    const chapterUrl = chapterUrlSegment?.includes(`chapter/${number}`)
+      ? `${url}series/${chapterUrlSegment}`
+      : `${comicUrl}/chapter/${number}`;
+
+    const [monthDay, year] = (publishDateString.match(/(\d+)/g) ?? []).map((value) =>
+      Number.parseInt(value)
+    );
+    const month = (publishDateString.split(" ").at(0) ?? "").toLowerCase();
+    const monthNumber = monthMap[month] ?? 0;
+
+    const publishedOn = new Date(year, monthNumber, monthDay);
+
+    const chapter = {
+      number,
+      title: chapterString.trim(),
+      url: chapterUrl,
+      publishedOn: publishedOn,
+      pageCount: 0,
+    };
+
+    chapters.push(chapter);
+  }
+
+  return chapters;
 }
 
 export const asura = { scrape, scrapeComics };

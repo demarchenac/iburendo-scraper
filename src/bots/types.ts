@@ -2,7 +2,7 @@ export type Source = "asura";
 
 export type Bot = {
   scrape: () => Promise<void>;
-  scrapeComics: () => Promise<CompleteComic[]>;
+  scrapeComics: () => Promise<Comic<IncompleteChapter>[]>;
 };
 
 export type BotBySource = Record<Source, Bot>;
@@ -25,6 +25,25 @@ export type ComicFromList = {
   url: string;
 };
 
-export type CompleteComic = ComicFromList & {
+export type Comic<ChapterType extends IncompleteChapter | Chapter> = ComicFromList & {
   firstChapter: number;
+  chapters: ChapterType[];
+};
+
+export type IncompleteChapter = {
+  number: number;
+  title: string;
+  url: string;
+  publishedOn: Date;
+};
+
+export type Chapter = IncompleteChapter & {
+  pageCount: number;
+  pages: Page[];
+};
+
+export type Page = {
+  number: number;
+  imageUrl: string;
+  url: string;
 };
