@@ -1,5 +1,5 @@
 import type { Page } from "playwright";
-import { openPage, close, goTo } from "./helpers";
+import { openPage, close, goTo, navigateFromLocator } from "./helpers";
 import { statusMap, TIMEOUTS_IN_MS } from "./constants";
 import { ComicFromList, CompleteComic } from "./types";
 
@@ -22,19 +22,19 @@ async function scrapeComics() {
   return comics;
 }
 
-async function goToComics(page: Page) {
-  await page.getByRole("link", { name: "Comics" }).click();
-  await page.waitForTimeout(TIMEOUTS_IN_MS.LINK_CLICK);
+function goToComics(page: Page) {
+  return navigateFromLocator(page, page.getByRole("link", { name: /comics/i }));
 }
 
 async function getComicsFromList(page: Page) {
-  let comics: ComicFromList[] = [];
   let shouldScrapePage = true;
+  let comics: ComicFromList[] = [];
+
   while (shouldScrapePage) {
     const comicsInPage = await getComicsInPage(page);
     comics = comics.concat(comicsInPage);
 
-    const nextBtn = page.getByText("Next").first();
+    const nextBtn = page.getByText(/next/i).first();
     const nextBtnStyle = await nextBtn.getAttribute("style");
     if (!nextBtnStyle) {
       shouldScrapePage = false;
@@ -42,10 +42,7 @@ async function getComicsFromList(page: Page) {
     }
 
     shouldScrapePage = nextBtnStyle === "pointer-events: auto;";
-    if (shouldScrapePage) {
-      await nextBtn.click();
-      await page.waitForTimeout(TIMEOUTS_IN_MS.LINK_CLICK);
-    }
+    if (shouldScrapePage) navigateFromLocator(page, nextBtn);
   }
 
   return comics.sort((a, b) => a.slug.localeCompare(b.slug));

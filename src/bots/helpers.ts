@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import type { Browser, BrowserContext, Page } from "playwright";
+import type { Browser, BrowserContext, Locator, Page } from "playwright";
 import { PlaywrightBlocker } from "@cliqz/adblocker-playwright";
 import { TIMEOUTS_IN_MS } from "./constants";
 
@@ -14,6 +14,11 @@ export async function openPage(url: string) {
   await page.goto(url);
 
   return { browser, context, page };
+}
+
+export async function navigateFromLocator(page: Page, locator: Locator) {
+  await locator.click();
+  await page.waitForTimeout(TIMEOUTS_IN_MS.LINK_CLICK);
 }
 
 export async function goTo(page: Page, url: string) {
