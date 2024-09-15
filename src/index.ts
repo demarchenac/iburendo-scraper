@@ -1,9 +1,20 @@
-import { Hono } from 'hono'
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import botRouter from "./routes/bot";
 
-const app = new Hono()
+const port = 3000;
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
+const app = new Hono();
 
-export default app
+app.get("/", (c) => {
+  return c.json({ success: true });
+});
+
+app.route("/bots", botRouter);
+
+console.log(`Server is running on port ${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
+});

@@ -1,14 +1,17 @@
 {
   "name": "iburendo-scraper",
   "scripts": {
-    "dev": "wrangler dev src/index.ts",
-    "deploy": "wrangler deploy --minify src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "scrape:asura": "tsx src/scrape.ts"
   },
   "dependencies": {
-    "hono": "^4.6.1"
+    "@cliqz/adblocker-playwright": "^1.33.2",
+    "@hono/node-server": "^1.12.2",
+    "hono": "^4.6.1",
+    "playwright": "^1.47.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240529.0",
-    "wrangler": "^3.57.2"
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1"
   }
 }
