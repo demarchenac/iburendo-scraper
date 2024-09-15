@@ -77,7 +77,11 @@ async function getComicsInPage(page: Page) {
       status: statusMap[status.toLowerCase()],
       comicType: comicType.toLowerCase(),
       title,
-      slug: title.toLowerCase().replaceAll(",", "").replace(/ /g, "-"),
+      slug: title
+        .toLowerCase()
+        .replaceAll(",", "")
+        .replace(/ /g, "-")
+        .replace(/([a-zA-ZñÑáéíóúÁÉÍÓÚ])'([a-zA-ZñÑáéíóúÁÉÍÓÚ])/, "$1$2"),
       lastChapter: Number.parseInt(chapter.replace(/chapter/i, "").trim()),
       rating: Number.parseFloat(rating),
       imageUrl: imageUrl!,
