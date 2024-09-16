@@ -1,7 +1,13 @@
 import type { Page } from "playwright";
-import { openPage, close, goTo, navigateFromLocator } from "./helpers";
+import { openPage, close, goTo, navigateFromLocator, reUploadComicsImagesToAzure } from "./helpers";
 import { monthMap, statusMap } from "./constants";
-import { ComicFromList, Comic, IncompleteChapter } from "./types";
+import type {
+  ComicFromList,
+  Comic,
+  IncompleteChapter,
+  Chapter,
+  Page as ChapterPage,
+} from "./types";
 
 const url = "https://asuracomic.net/";
 
@@ -10,14 +16,22 @@ async function scrape() {
   await close(browser, context, page);
 }
 
-async function scrapeComics() {
-  const { browser, context, page } = await openPage(url);
+async function scrapeComics(headless: boolean = true) {
+  const { browser, context, page } = await openPage(url, headless);
 
   await goToComics(page);
-  const inCompleteComics = await getComicsFromList(page);
-  const comics = await getCompleteComics(page, inCompleteComics);
+  const comicsWithoutChapters = await getComicsFromList(page);
+  const comicsWithIncompleteChapters = await getComicsWithIncompleteChapters(page, [
+    comicsWithoutChapters.at(0)!,
+  ]);
+  const comicsWithImagesFromSource = await getComicsWithChapterPages(
+    page,
+    comicsWithIncompleteChapters
+  );
 
   await close(browser, context, page);
+
+  const comics = await reUploadComicsImagesToAzure(comicsWithImagesFromSource);
 
   return comics;
 }
@@ -73,15 +87,17 @@ async function getComicsInPage(page: Page) {
       .locator("img")
       .getAttribute("src");
 
+    const slug = title
+      .toLowerCase()
+      .replaceAll(",", "")
+      .replace(/ /g, "-")
+      .replace(/([a-zA-ZñÑáéíóúÁÉÍÓÚ])'([a-zA-ZñÑáéíóúÁÉÍÓÚ])/, "$1$2");
+
     const comic: ComicFromList = {
       status: statusMap[status.toLowerCase()],
       comicType: comicType.toLowerCase(),
       title,
-      slug: title
-        .toLowerCase()
-        .replaceAll(",", "")
-        .replace(/ /g, "-")
-        .replace(/([a-zA-ZñÑáéíóúÁÉÍÓÚ])'([a-zA-ZñÑáéíóúÁÉÍÓÚ])/, "$1$2"),
+      slug,
       lastChapter: Number.parseInt(chapter.replace(/chapter/i, "").trim()),
       rating: Number.parseFloat(rating),
       imageUrl: imageUrl!,
@@ -94,7 +110,7 @@ async function getComicsInPage(page: Page) {
   return comicsInPage;
 }
 
-async function getCompleteComics(page: Page, incompleteComics: ComicFromList[]) {
+async function getComicsWithIncompleteChapters(page: Page, incompleteComics: ComicFromList[]) {
   const comics: Comic<IncompleteChapter>[] = [];
 
   for (const incompleteComic of incompleteComics) {
@@ -161,6 +177,48 @@ async function getChapterList(page: Page, title: string, comicUrl: string) {
   }
 
   return chapters;
+}
+
+async function getComicsWithChapterPages(page: Page, incompleteComics: Comic<IncompleteChapter>[]) {
+  const comics: Comic<Chapter>[] = [];
+
+  for (const incompleteComic of incompleteComics) {
+    const chapters = await getChaptersWithPages(page, incompleteComic.chapters);
+    comics.push({ ...incompleteComic, chapters });
+  }
+
+  return comics;
+}
+
+async function getChaptersWithPages(page: Page, incompleteChapters: IncompleteChapter[]) {
+  const chapters: Chapter[] = [];
+
+  for (const incompleteChapter of incompleteChapters) {
+    const pages = await getChapterPages(page, incompleteChapter);
+    chapters.push({ ...incompleteChapter, pages, pageCount: pages.length });
+  }
+
+  return chapters;
+}
+
+async function getChapterPages(page: Page, chapter: IncompleteChapter) {
+  const pages: ChapterPage[] = [];
+
+  await goTo(page, chapter.url);
+
+  const imgContainers = await page.getByRole("img", { name: /chapter page/i }).all();
+  const srcPromises = imgContainers.map((img) => img.getAttribute("src")) as Promise<string>[];
+  const images = await Promise.all(srcPromises);
+
+  for (let imageIndex = 0; imageIndex < images.length; imageIndex++) {
+    pages.push({
+      number: imageIndex + 1,
+      imageUrl: images[imageIndex],
+      url: chapter.url,
+    });
+  }
+
+  return pages;
 }
 
 export const asura = { scrape, scrapeComics };

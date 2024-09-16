@@ -1,8 +1,8 @@
 export type Source = "asura";
 
 export type Bot = {
-  scrape: () => Promise<void>;
-  scrapeComics: () => Promise<Comic<IncompleteChapter>[]>;
+  scrape: (headless?: boolean) => Promise<void>;
+  scrapeComics: (headless?: boolean) => Promise<Comic<Chapter>[]>;
 };
 
 export type BotBySource = Record<Source, Bot>;
