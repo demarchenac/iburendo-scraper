@@ -1,5 +1,12 @@
 import type { Page } from "playwright";
-import { openPage, close, goTo, navigateFromLocator, reUploadComicsImagesToAzure } from "./helpers";
+import {
+  openPage,
+  close,
+  goTo,
+  navigateFromLocator,
+  reUploadComicsImagesToAzure,
+  reUploadSourceImageToAzure,
+} from "./helpers";
 import { monthMap, statusMap } from "./constants";
 import type {
   ComicFromList,
@@ -7,13 +14,34 @@ import type {
   IncompleteChapter,
   Chapter,
   Page as ChapterPage,
+  Source,
 } from "./types";
+import { parseStringToSlug } from "../helpers";
 
 const url = "https://asuracomic.net/";
 
 async function scrape() {
   const { browser, context, page } = await openPage(url);
   await close(browser, context, page);
+}
+
+async function scrapeSource(headless: boolean = true) {
+  const { browser, context, page } = await openPage(url, headless);
+
+  const title = await page.title();
+  const imageUrlSegment = await page
+    .getByRole("banner")
+    .getByRole("img", { name: /asura logo/i })
+    .getAttribute("src");
+  const imageUrl = `${url}${imageUrlSegment!}`.replace("//", "/");
+
+  const sourceWithImagesFromSource: Source = { title, imageUrl, slug: parseStringToSlug(title) };
+
+  await close(browser, context, page);
+
+  const source = await reUploadSourceImageToAzure(sourceWithImagesFromSource);
+
+  return source;
 }
 
 async function scrapeComics(headless: boolean = true) {
@@ -87,17 +115,11 @@ async function getComicsInPage(page: Page) {
       .locator("img")
       .getAttribute("src");
 
-    const slug = title
-      .toLowerCase()
-      .replaceAll(",", "")
-      .replace(/ /g, "-")
-      .replace(/([a-zA-ZñÑáéíóúÁÉÍÓÚ])'([a-zA-ZñÑáéíóúÁÉÍÓÚ])/, "$1$2");
-
     const comic: ComicFromList = {
       status: statusMap[status.toLowerCase()],
       comicType: comicType.toLowerCase(),
       title,
-      slug,
+      slug: parseStringToSlug(title),
       lastChapter: Number.parseInt(chapter.replace(/chapter/i, "").trim()),
       rating: Number.parseFloat(rating),
       imageUrl: imageUrl!,
@@ -221,4 +243,4 @@ async function getChapterPages(page: Page, chapter: IncompleteChapter) {
   return pages;
 }
 
-export const asura = { scrape, scrapeComics };
+export const asura = { scrape, scrapeComics, scrapeSource };

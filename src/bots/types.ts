@@ -1,11 +1,18 @@
-export type Source = "asura";
+export type SourceSlug = "asura";
 
 export type Bot = {
   scrape: (headless?: boolean) => Promise<void>;
   scrapeComics: (headless?: boolean) => Promise<Comic<Chapter>[]>;
+  scrapeSource: (headless?: boolean) => Promise<Source>;
 };
 
-export type BotBySource = Record<Source, Bot>;
+export type BotBySource = Record<SourceSlug, Bot>;
+
+export type Source = {
+  title: string;
+  slug: string;
+  imageUrl: string;
+};
 
 export type ComicStatus =
   | "on-going"

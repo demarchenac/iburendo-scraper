@@ -4,7 +4,7 @@ import { PlaywrightBlocker } from "@cliqz/adblocker-playwright";
 import { TIMEOUTS_IN_MS } from "./constants";
 import { getImageFromUrl } from "../helpers";
 import { AzureBlobService } from "../lib";
-import type { Chapter, Page as ChapterPage, Comic } from "./types";
+import type { Chapter, Page as ChapterPage, Comic, Source } from "./types";
 
 export async function openPage(url: string, headless: boolean = true) {
   const browser = await chromium.launch({ headless });
@@ -81,4 +81,13 @@ export async function reUploadComicsImagesToAzure(comicsWithImagesFromSource: Co
   }
 
   return comics;
+}
+
+export async function reUploadSourceImageToAzure(source: Source) {
+  const newLogoUrl = await reUploadImageFromSourceToAzure(
+    `${source.slug}-logo.webp`,
+    source.imageUrl
+  );
+
+  return { ...source, imageUrl: newLogoUrl };
 }
