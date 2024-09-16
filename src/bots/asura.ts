@@ -15,8 +15,12 @@ import type {
   Chapter,
   Page as ChapterPage,
   Source,
+  ScrapeResult,
 } from "./types";
 import { parseStringToSlug } from "../helpers";
+import { db } from "../db";
+import { sources as SourcesTable } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 const url = "https://asuracomic.net/";
 
@@ -25,23 +29,29 @@ async function scrape() {
   await close(browser, context, page);
 }
 
-async function scrapeSource(headless: boolean = true) {
+async function scrapeSource(headless: boolean = true): Promise<ScrapeResult<Source>> {
   const { browser, context, page } = await openPage(url, headless);
 
   const title = await page.title();
+  const slug = parseStringToSlug(title);
+
+  const sourceFromDb = await db.query.sources.findFirst({ where: eq(SourcesTable.slug, slug) });
+  if (sourceFromDb) return { wasScraped: false, data: sourceFromDb };
+
   const imageUrlSegment = await page
     .getByRole("banner")
     .getByRole("img", { name: /asura logo/i })
     .getAttribute("src");
+
   const imageUrl = `${url}${imageUrlSegment!}`.replace("//", "/");
 
-  const sourceWithImagesFromSource: Source = { title, imageUrl, slug: parseStringToSlug(title) };
+  const sourceWithImagesFromSource: Source = { title, imageUrl, slug };
 
   await close(browser, context, page);
 
   const source = await reUploadSourceImageToAzure(sourceWithImagesFromSource);
 
-  return source;
+  return { wasScraped: true, data: source };
 }
 
 async function scrapeComics(headless: boolean = true) {

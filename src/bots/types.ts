@@ -3,7 +3,7 @@ export type SourceSlug = "asura";
 export type Bot = {
   scrape: (headless?: boolean) => Promise<void>;
   scrapeComics: (headless?: boolean) => Promise<Comic<Chapter>[]>;
-  scrapeSource: (headless?: boolean) => Promise<Source>;
+  scrapeSource: (headless?: boolean) => Promise<ScrapeResult<Source>>;
 };
 
 export type BotBySource = Record<SourceSlug, Bot>;
@@ -12,6 +12,11 @@ export type Source = {
   title: string;
   slug: string;
   imageUrl: string;
+};
+
+export type ScrapeResult<T> = {
+  wasScraped: boolean;
+  data: T;
 };
 
 export type ComicStatus =
