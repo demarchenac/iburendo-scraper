@@ -10,7 +10,7 @@ bot.post("/:bot/scrape/comics", async (c) => {
   const isHeadless = Boolean(headless);
 
   if (!(bot in bots)) {
-    return c.json({ success: false, error: "provided bot is not implemented" });
+    return c.json({ success: false, error: "provided bot is not implemented" }, 404);
   }
 
   const { data: scrapedSource, wasScraped: sourceWasScraped } = await bots[bot].scrapeSource(
