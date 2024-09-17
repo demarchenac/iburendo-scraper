@@ -3,7 +3,7 @@ import { env } from "./src/env";
 
 export default {
   schema: "./src/db/schema/*",
-  out: "./drizzle",
+  out: "./src/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
     url: env.POSTGRES_DATABASE_URL,

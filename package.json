@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "scrape:asura": "tsx src/scrape.ts",
-    "db:migrate": "tsx migrate.ts",
+    "db:migrate": "tsx src/db/migrate.ts",
     "db:studio": "pnpm drizzle-kit studio"
   },
   "dependencies": {
