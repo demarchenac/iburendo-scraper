@@ -36,6 +36,8 @@ export async function close(browser: Browser, context: BrowserContext, page: Pag
 }
 
 async function reUploadImageFromSourceToAzure(name: string, imageUrl: string) {
+  if (imageUrl.indexOf(AzureBlobService.connectionString) !== -1) return imageUrl;
+
   const urlFromAzure = await AzureBlobService.isImageUploaded(name);
   if (urlFromAzure) return urlFromAzure;
 

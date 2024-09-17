@@ -36,4 +36,5 @@ export async function uploadImage(name: string, image: Buffer) {
 export const AzureBlobService = {
   uploadImage,
   isImageUploaded,
+  connectionString,
 };
